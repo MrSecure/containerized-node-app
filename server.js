@@ -1,9 +1,13 @@
 'use strict';
 
 const express = require('express');
-const Prometheus = require('prom-client');
-const metricsInterval = Prometheus.collectDefaultMetrics();
+const client = require('prom-client');
+const collectDefaultMetrics = client.collectDefaultMetrics;
 
+collectDefaultMetrics({
+    timeout: 10000,
+    gcDurationBuckets: [0.001, 0.01, 0.1, 1, 2, 5], // These are the default buckets.
+  });
 // Constants
 const PORT = 8080;
 const HOST = '0.0.0.0';
@@ -15,8 +19,8 @@ app.get('/', (req, res) => {
 });
 
 app.get('/metrics', async (req, res) => {
-  res.set('Content-Type', Prometheus.register.contentType)
-  res.end(await Prometheus.register.metrics())
+  res.set('Content-Type', client.register.contentType)
+  res.end(await client.register.metrics())
 })
 
 app.listen(PORT, HOST);
