@@ -24,7 +24,7 @@ const httpRequestDurationMicroseconds = new client.Histogram({
   name: 'http_request_duration_ms',
   help: 'Duration of HTTP requests in ms',
   labelNames: ['method', 'route', 'code'],
-  buckets: [0.10, 5, 15, 50, 100, 200, 300, 400, 500]  // buckets for response time from 0.1ms to 500ms
+  buckets: [1, 5, 10, 20, 50, 100, 200, 500]  // buckets for response time from 0.1ms to 500ms
 })
 
 // Use middleware to pass our response start time
@@ -38,6 +38,21 @@ app.get('/', (req, res, next) => {
   next() // Ensure that we continue the request
 });
 
+app.get('/r', (req, res, next) => {  
+  res.locals.ms = Math.floor(Math.random() * Math.random() * 512) + 17;
+  setTimeout(function(){
+    res.json({msg: `Random Sleepy World ${res.locals.ms}`});
+    next(); // Ensure that we continue the request
+  }, res.locals.ms);
+});
+
+app.get('/s/:ms?', (req, res, next) => {  
+  setTimeout(function(){
+    res.json({msg: `Yawn Sleepy World ${req.params.ms}`});
+    next(); // Ensure that we continue the request
+  }, req.params.ms);
+});
+
 // Use middleware to calculate how long the response took and pass it to the custom Prometheus gauge.
 app.use((req, res, next) => {
   const responseTimeInMs = Date.now() - res.locals.startEpoch
@@ -45,6 +60,7 @@ app.use((req, res, next) => {
     .labels(req.method, req.path, res.statusCode)
     .observe(responseTimeInMs)
 
+  console.log([req.ip, req.method, req.path, res.statusCode, responseTimeInMs].join(" "))
   next()
 })
 
