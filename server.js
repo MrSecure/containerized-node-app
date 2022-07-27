@@ -27,6 +27,11 @@ const httpRequestDurationMicroseconds = new client.Histogram({
   buckets: [1, 5, 10, 20, 50, 100, 200, 500]  // buckets for response time from 0.1ms to 500ms
 })
 
+const httpRequestCount = new client.Counter({
+  name: 'http_requests_total',
+  help: 'count of HTTP requests',
+})
+
 // Use middleware to pass our response start time
 app.use((req, res, next) => {
   res.locals.startEpoch = Date.now();
@@ -59,6 +64,8 @@ app.use((req, res, next) => {
   httpRequestDurationMicroseconds
     .labels(req.method, req.path, res.statusCode)
     .observe(responseTimeInMs)
+  
+  httpRequestCount.inc();
 
   console.log([req.ip, req.method, req.path, res.statusCode, responseTimeInMs].join(" "))
   next()
